@@ -414,40 +414,39 @@ class Thumbnailer(File):
         return thumbnail
 
     def thumbnail_exists(self, thumbnail_name):
-        """
-        Calculate whether the thumbnail already exists and that the source is
-        not newer than the thumbnail.
+        try: 
+            # Only based yourself on the local storage existance 
+            path = self.thumbnail_storage.path(thumbnail_name) 
+            return self.thumbnail_storage.exists(path) 
+        except OSError: 
+            return 0 
+        except NotImplementedError: 
+             return None
 
-        If both the source and thumbnail file storages are local, their
-        file modification times are used. Otherwise the database cached
-        modification times are used.
-        """
-        if self.remote_source:
-            return False
-        # Try to use the local file modification times first.
-        source_modtime = self.get_source_modtime()
-        thumbnail_modtime = self.get_thumbnail_modtime(thumbnail_name)
-        if self.thumbnail_high_resolution:
-            filename_parts = os.path.splitext(thumbnail_name)
-            thumbnail_name_2x = '%s@2x%s' % filename_parts
-            thumbnail_modtime = min(
-                thumbnail_modtime,
-                self.get_thumbnail_modtime(thumbnail_name_2x))
-        # The thumbnail modification time will be 0 if there was an OSError,
-        # in which case it will still be used (but always return False).
-        if source_modtime and thumbnail_modtime is not None:
-            return thumbnail_modtime and source_modtime <= thumbnail_modtime
-        # Fall back to using the database cached modification times.
-        source = self.get_source_cache()
-        if not source:
-            return False
-        thumbnail = self.get_thumbnail_cache(thumbnail_name)
-        thumbnail_modtime = thumbnail.modified
-        if thumbnail and self.thumbnail_high_resolution:
-            thumbnail = self.get_thumbnail_cache(thumbnail_name_2x)
-            if thumbnail:
-                thumbnail_modtime = min(thumbnail_modtime, thumbnail.modified)
-        return thumbnail and source.modified <= thumbnail_modtime
+        # """
+        # Calculate whether the thumbnail already exists and that the source is
+        # not newer than the thumbnail.
+        # 
+        # If both the source and thumbnail file storages are local, their
+        # file modification times are used. Otherwise the database cached
+        # modification times are used.
+        # """
+        
+        # if self.remote_source:
+        #     return False
+        # # Try to use the local file modification times first.
+        # source_modtime = self.get_source_modtime()
+        # thumbnail_modtime = self.get_thumbnail_modtime(thumbnail_name)
+        # # The thumbnail modification time will be 0 if there was an OSError,
+        # # in which case it will still be used (but always return False).
+        # if source_modtime and thumbnail_modtime is not None:
+        #     return thumbnail_modtime and source_modtime <= thumbnail_modtime
+        # # Fall back to using the database cached modification times.
+        # source = self.get_source_cache()
+        # if not source:
+        #     return False
+        # thumbnail = self.get_thumbnail_cache(thumbnail_name)
+        # return thumbnail and source.modified <= thumbnail.modified
 
     def get_source_cache(self, create=False, update=False):
         if self.remote_source:
